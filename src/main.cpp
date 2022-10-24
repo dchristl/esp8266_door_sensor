@@ -251,10 +251,18 @@ void callUrl()
   }
 }
 
+void initInvalidStates()
+{
+  data.d1Activated = (data.d1Activated != 0 || data.d1Activated != 1) ? false : data.d1Activated;
+  data.d2Activated = (data.d2Activated != 0 || data.d2Activated != 1) ? false : data.d2Activated;
+  data.d5Activated = (data.d5Activated != 0 || data.d5Activated != 1) ? false : data.d5Activated;
+  data.d6Activated = (data.d6Activated != 0 || data.d6Activated != 1) ? false : data.d6Activated;
+  data.d7Activated = (data.d7Activated != 0 || data.d7Activated != 1) ? false : data.d7Activated;
+}
 void loop()
 {
-
   readFromRTCMemory();
+  initInvalidStates();
 
   Serial.printf("Old states: D1: %i, D2: %i, D5: %i, D6: %i, D7: %i\n", rtcValues.d1, rtcValues.d2, rtcValues.d5, rtcValues.d6, rtcValues.d7);
   int d2 = digitalRead(PIN_D2);
@@ -296,19 +304,17 @@ void loop()
     EEPROM.get(0, data);
     connectToWifi();
     restCallCounter = 0;
-    // callUrl();
-    // ESP.deepSleep(SLEEP_SHORT); // 30s
+    callUrl();
+    ESP.deepSleep(SLEEP_SHORT); // 30s
   }
   else if (anySensorIsOpenAndWasClosedBefore)
   {
     Serial.println("30 s");
-    // ESP.deepSleep(SLEEP_SHORT); // 30s
+    ESP.deepSleep(SLEEP_SHORT); // 30s
   }
   else
   {
     Serial.println("5 mins");
-    // ESP.deepSleep(SLEEP_LONG); // 5 min /
+    ESP.deepSleep(SLEEP_LONG); // 5 min /
   }
-
-  delay(10000); // FIXME
 }
