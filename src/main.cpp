@@ -33,7 +33,7 @@ struct settings
 
 typedef struct
 {
-  bool init = 0;
+  int init = 0;
   bool d1;
   bool d2;
   bool d5;
@@ -151,12 +151,14 @@ void connectToWifi()
 
 void readFromRTCMemory()
 {
+  Serial.printf("Reading %i bytes from rtc memory\n", sizeof(rtcValues));
   system_rtc_mem_read(RTCMEMORYSTART, &rtcValues, sizeof(rtcValues));
   yield();
 }
 
 void writeToRTCMemory()
 {
+  Serial.printf("Writing %i bytes to rtc memory\n", sizeof(rtcValues));
   system_rtc_mem_write(RTCMEMORYSTART, &rtcValues, sizeof(rtcValues));
   yield();
 }
@@ -175,7 +177,7 @@ void initRtcDataOrGetFromUser()
   rtcValues.d5Activated = data.d5Activated;
   rtcValues.d6Activated = data.d6Activated;
   rtcValues.d7Activated = data.d7Activated;
-  rtcValues.init = true;
+  rtcValues.init = 1;
   writeToRTCMemory();
 }
 
@@ -200,8 +202,9 @@ void setup()
   digitalWrite(PIN_D7, HIGH);
 
   readFromRTCMemory();
+  Serial.printf("Init-Value: %i\n", rtcValues.init);
 
-  if (!rtcValues.init || digitalRead(RESET_PIN) == LOW)
+  if (rtcValues.init != 1 || digitalRead(RESET_PIN) == LOW)
   {
     initRtcDataOrGetFromUser();
   }
@@ -251,19 +254,8 @@ void callUrl()
   }
 }
 
-void initInvalidStates()
-{
-  data.d1Activated = (data.d1Activated != 0 || data.d1Activated != 1) ? false : data.d1Activated;
-  data.d2Activated = (data.d2Activated != 0 || data.d2Activated != 1) ? false : data.d2Activated;
-  data.d5Activated = (data.d5Activated != 0 || data.d5Activated != 1) ? false : data.d5Activated;
-  data.d6Activated = (data.d6Activated != 0 || data.d6Activated != 1) ? false : data.d6Activated;
-  data.d7Activated = (data.d7Activated != 0 || data.d7Activated != 1) ? false : data.d7Activated;
-}
 void loop()
 {
-  readFromRTCMemory();
-  initInvalidStates();
-
   Serial.printf("Old states: D1: %i, D2: %i, D5: %i, D6: %i, D7: %i\n", rtcValues.d1, rtcValues.d2, rtcValues.d5, rtcValues.d6, rtcValues.d7);
   int d2 = digitalRead(PIN_D2);
   int d1 = digitalRead(PIN_d1);
@@ -271,7 +263,7 @@ void loop()
   int d6 = digitalRead(PIN_D6);
   int d7 = digitalRead(PIN_D7);
   Serial.printf("New states: D1: %i, D2: %i, D5: %i, D6: %i, D7: %i\n", d1, d2, d5, d6, d7);
-  Serial.printf("Checking for states D1: %i, D2: %i, D5: %i , D6: %i, D7: %i\n", rtcValues.d1Activated, rtcValues.d2Activated, rtcValues.d5Activated, rtcValues.d6Activated, rtcValues.d7Activated);
+  Serial.printf("Checking for states D1: %i, D2: %i, D5: %i, D6: %i, D7: %i\n", rtcValues.d1Activated, rtcValues.d2Activated, rtcValues.d5Activated, rtcValues.d6Activated, rtcValues.d7Activated);
 
   bool anySensorIsOpenAndWasBefore = (d1 & rtcValues.d1 & rtcValues.d1Activated) ||
                                      (d2 & rtcValues.d2 & rtcValues.d2Activated) ||
@@ -284,7 +276,7 @@ void loop()
                                            (d5 & rtcValues.d5Activated) ||
                                            (d6 & rtcValues.d6Activated) ||
                                            (d7 & rtcValues.d7Activated);
-  // TODO Check if was open, but is now closed (0 -> 1, 1 -> 0)
+
   Serial.printf("anySensorIsOpenAndWasBefore = %i\n", anySensorIsOpenAndWasBefore);
   Serial.printf("anySensorIsOpenAndWasClosedBefore = %i\n", anySensorIsOpenAndWasClosedBefore);
 
