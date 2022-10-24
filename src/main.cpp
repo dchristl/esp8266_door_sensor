@@ -5,6 +5,8 @@
 #include <string>
 
 const int VIRGIN_EEPROM = 255;
+const int MAGIC_NUMBER = 42;
+
 #define RTCMEMORYSTART 65
 #define SLEEP_SHORT 30 * 1000000
 #define SLEEP_LONG 300 * 1000000
@@ -33,7 +35,7 @@ struct settings
 
 typedef struct
 {
-  int init = 0;
+  int init = MAGIC_NUMBER;
   bool d1;
   bool d2;
   bool d5;
@@ -177,7 +179,7 @@ void initRtcDataOrGetFromUser()
   rtcValues.d5Activated = data.d5Activated;
   rtcValues.d6Activated = data.d6Activated;
   rtcValues.d7Activated = data.d7Activated;
-  rtcValues.init = 1;
+  rtcValues.init = MAGIC_NUMBER;
   writeToRTCMemory();
 }
 
@@ -204,7 +206,7 @@ void setup()
   readFromRTCMemory();
   Serial.printf("Init-Value: %i\n", rtcValues.init);
 
-  if (rtcValues.init != 1 || digitalRead(RESET_PIN) == LOW)
+  if (rtcValues.init != 42 || digitalRead(RESET_PIN) == LOW)
   {
     initRtcDataOrGetFromUser();
   }
