@@ -6,6 +6,7 @@
 
 const int VIRGIN_EEPROM = 255;
 const int MAGIC_NUMBER = 42;
+const int PING_LOOPS = 144; // every 5 mins -> 12 times per hour -> twice a day (every 12 hours) -> 12*12
 
 #define RTCMEMORYSTART 65
 #define SLEEP_SHORT 30 * 1000000
@@ -47,6 +48,7 @@ typedef struct
   bool d5Activated;
   bool d6Activated;
   bool d7Activated;
+  int pingCounter = 0;
 } rtcStore;
 
 rtcStore rtcValues;
@@ -92,7 +94,7 @@ void getDataFromSerialConsole()
   }
   Serial.println(data.url);
 
-  Serial.println("Should Pin d1 be observed? [y|n] ");
+  Serial.println("Should Pin D1 be observed? [y|n] ");
   tmp = Serial.readStringUntil('\n');
   data.d1Activated = ('y' == tmp[0]) ? true : false;
   Serial.println("Should Pin D2 be observed? [y|n] ");
@@ -216,7 +218,7 @@ void setup()
   }
 }
 
-void callUrl()
+void callUrl(String content)
 {
   HTTPClient http;
   WiFiClient client;
@@ -225,8 +227,9 @@ void callUrl()
 
   http.begin(client, data.url);
   http.addHeader("Content-Type", "text/plain");
+  Serial.printf("Sending: %s\n", content.c_str());
 
-  int httpCode = http.POST("ON");
+  int httpCode = http.POST(content);
   Serial.printf("HTTP-Code %i\n", httpCode);
   if (httpCode == HTTP_CODE_OK)
   {
@@ -251,7 +254,7 @@ void callUrl()
     if (restCallCounter < 5)
     {
       restCallCounter++;
-      callUrl();
+      callUrl(content);
     }
   }
 }
@@ -287,28 +290,52 @@ void loop()
   rtcValues.d5 = d5;
   rtcValues.d6 = d6;
   rtcValues.d7 = d7;
+  // Reset if it will be called anyways
+  anySensorIsOpenAndWasBefore ? rtcValues.pingCounter = 0 : rtcValues.pingCounter++;
+
+  if (rtcValues.pingCounter > PING_LOOPS)
+  {
+    Serial.printf("Ping counter is reached (%i > %i). Calling Ping URL\n", rtcValues.pingCounter, PING_LOOPS);
+    connectToWifi();
+    callUrl("PING");
+    rtcValues.pingCounter = 0;
+  }
+  else
+  {
+    Serial.printf("Ping counter not reached (%i < %i)\n", rtcValues.pingCounter, PING_LOOPS);
+  }
   writeToRTCMemory();
 
   Serial.print("Going to deep sleep for ");
   // Check if any sensor is open
   if (anySensorIsOpenAndWasBefore)
   {
-    Serial.println("30 s");
+    Serial.println("30 s\n");
     EEPROM.begin(405);
     EEPROM.get(0, data);
     connectToWifi();
     restCallCounter = 0;
-    callUrl();
+
+    String postData = (d1 & rtcValues.d1Activated) ? "D1\n" : "";
+    postData.concat((d2 & rtcValues.d2Activated) ? "D2\n" : "");
+    postData.concat((d5 & rtcValues.d5Activated) ? "D5\n" : "");
+    postData.concat((d6 & rtcValues.d6Activated) ? "D6\n" : "");
+    postData.concat((d7 & rtcValues.d7Activated) ? "D7\n" : "");
+
+    callUrl(postData);
+    // delay(10000);
     ESP.deepSleep(SLEEP_SHORT); // 30s
   }
   else if (anySensorIsOpenAndWasClosedBefore)
   {
-    Serial.println("30 s");
+    Serial.println("30 s\n");
     ESP.deepSleep(SLEEP_SHORT); // 30s
+    // delay(10000);
   }
   else
   {
-    Serial.println("5 mins");
+    Serial.println("5 mins\n");
     ESP.deepSleep(SLEEP_LONG); // 5 min /
+    // delay(10000);
   }
 }
