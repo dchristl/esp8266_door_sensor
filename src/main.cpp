@@ -299,7 +299,7 @@ void loop()
 
   if (rtcValues.pingCounter >= PING_LOOPS)
   {
-    Serial.printf("Ping counter is reached (%i > %i). Calling Ping URL\n", rtcValues.pingCounter, PING_LOOPS);
+    Serial.printf("Ping counter is reached (%i). Calling Ping URL\n", rtcValues.pingCounter);
     EEPROM.begin(405);
     EEPROM.get(0, data);
     connectToWifi();
