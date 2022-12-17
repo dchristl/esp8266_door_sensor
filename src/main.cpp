@@ -290,12 +290,18 @@ void loop()
   rtcValues.d5 = d5;
   rtcValues.d6 = d6;
   rtcValues.d7 = d7;
+  if (rtcValues.pingCounter < 0 || rtcValues.pingCounter > PING_LOOPS)
+  {
+    rtcValues.pingCounter = 0;
+  }
   // Reset if it will be called anyways
   anySensorIsOpenAndWasBefore ? rtcValues.pingCounter = 0 : rtcValues.pingCounter++;
 
-  if (rtcValues.pingCounter > PING_LOOPS)
+  if (rtcValues.pingCounter >= PING_LOOPS)
   {
     Serial.printf("Ping counter is reached (%i > %i). Calling Ping URL\n", rtcValues.pingCounter, PING_LOOPS);
+    EEPROM.begin(405);
+    EEPROM.get(0, data);
     connectToWifi();
     callUrl("PING");
     rtcValues.pingCounter = 0;
