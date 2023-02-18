@@ -6,7 +6,7 @@
 
 const int VIRGIN_EEPROM = 255;
 const int MAGIC_NUMBER = 42;
-const int PING_LOOPS = 144; // every 5 mins -> 12 times per hour -> twice a day (every 12 hours) -> 12*12
+const int PING_LOOPS = 2016; // every 5 mins -> 12 times per hour -> once a week (7days) -> 12*24*7
 
 #define RTCMEMORYSTART 65
 #define SLEEP_SHORT 30 * 1000000
